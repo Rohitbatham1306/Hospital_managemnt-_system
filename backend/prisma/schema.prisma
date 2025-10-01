@@ -1,0 +1,194 @@
+// Prisma schema for Hospital Management System (MySQL)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  DOCTOR
+  RECEPTIONIST
+  LAB
+}
+
+model User {
+  id           String  @id @default(cuid())
+  email        String  @unique
+  passwordHash String
+  fullName     String
+  role         Role
+  isActive     Boolean @default(true)
+  isVerified   Boolean @default(false)
+  otp          String?
+  otpExpiresAt DateTime?
+
+  // 1-to-1 relation with Doctor (Doctor has the FK)
+  doctorProfile Doctor?
+
+  // Back-relations
+  treatmentNotes TreatmentNote[]
+  labReports     LabReport[]
+  bills          Bill[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Doctor {
+  id        String  @id @default(cuid())
+  userId    String  @unique
+  user      User    @relation(fields: [userId], references: [id])
+  specialty String?
+  notes     String?
+
+  patients      Visit[]
+  prescriptions Prescription[]
+}
+
+model Patient {
+  id                     String         @id @default(cuid())
+  firstName              String
+  lastName               String
+  dateOfBirth            DateTime?
+  gender                 String?
+  phone                  String?
+  email                  String?
+  address                String?
+  emergencyContact       String?
+  preferredPaymentMethod PaymentMethod?
+
+  visits        Visit[]
+  labReports    LabReport[]
+  bills         Bill[]
+  prescriptions Prescription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lastName, firstName])
+  @@index([phone])
+}
+
+model Visit {
+  id        String @id @default(cuid())
+  patientId String
+  doctorId  String
+
+  patient   Patient @relation(fields: [patientId], references: [id])
+  doctor    Doctor  @relation(fields: [doctorId], references: [id])
+  reason    String?
+  diagnosis String?
+  status    String  @default("OPEN") // OPEN, CLOSED
+
+  treatmentNotes TreatmentNote[]
+  prescriptions  Prescription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId, doctorId])
+}
+
+model TreatmentNote {
+  id       String @id @default(cuid())
+  visitId  String
+  authorId String
+
+  visit  Visit @relation(fields: [visitId], references: [id])
+  author User  @relation(fields: [authorId], references: [id])
+
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model LabReport {
+  id           String @id @default(cuid())
+  patientId    String
+  uploadedById String
+
+  patient    Patient @relation(fields: [patientId], references: [id])
+  uploadedBy User    @relation(fields: [uploadedById], references: [id])
+
+  type      String
+  fileUrl   String
+  fileKey   String // S3 key
+  notes     String?
+  createdAt DateTime @default(now())
+
+  @@index([patientId])
+}
+
+model Bill {
+  id         String @id @default(cuid())
+  patientId  String
+  issuedById String
+
+  patient  Patient @relation(fields: [patientId], references: [id])
+  issuedBy User    @relation(fields: [issuedById], references: [id])
+
+  status String  @default("DUE") // DUE, PARTIAL, PAID, VOID
+  total  Decimal @default(0)
+  paid   Decimal @default(0)
+
+  items    BillItem[]
+  payments Payment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId])
+}
+
+model BillItem {
+  id     String @id @default(cuid())
+  billId String
+
+  bill Bill @relation(fields: [billId], references: [id])
+
+  label     String
+  quantity  Int     @default(1)
+  unitPrice Decimal @default(0)
+  lineTotal Decimal @default(0)
+}
+
+model Payment {
+  id     String @id @default(cuid())
+  billId String
+
+  bill Bill @relation(fields: [billId], references: [id])
+
+  amount    Decimal  @default(0)
+  method    String // CASH, CARD, UPI, etc.
+  reference String?
+  createdAt DateTime @default(now())
+
+  @@index([billId])
+}
+
+model Prescription {
+  id        String  @id @default(cuid())
+  patientId String
+  doctorId  String
+  visitId   String?
+
+  patient Patient @relation(fields: [patientId], references: [id])
+  doctor  Doctor  @relation(fields: [doctorId], references: [id])
+  visit   Visit?  @relation(fields: [visitId], references: [id])
+
+  medicines  String
+  diagnosis  String?
+  suggestion String?
+  createdAt  DateTime @default(now())
+
+  @@index([patientId])
+}
+
+enum PaymentMethod {
+  CASH
+  ONLINE
+}

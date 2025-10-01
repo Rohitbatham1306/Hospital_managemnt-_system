@@ -1,0 +1,65 @@
+
+# Node modules
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Logs
+logs
+*.log
+*.log.*
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Build outputs
+/dist
+/build
+/.next
+/.nuxt
+/out
+
+# Coverage
+coverage/
+*.lcov
+
+# IDE / Editor specific
+.vscode/
+.idea/
+*.swp
+*.swo
+*.sublime-workspace
+*.sublime-project
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Cache
+.cache/
+.tern-port
+.next/
+
+# React specific
+*.eslintcache
+/public/static/
+public/temp/
+
+# MongoDB data (if kept locally in repo folder)
+data/
+dump/
+
+# TypeScript build (if using TS in project)
+*.tsbuildinfo
+
+# Misc
+*.tgz
